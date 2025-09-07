@@ -1,0 +1,208 @@
+---
+title: "汽车数据分析报告"
+author: "数据分析团队"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    number_sections: true
+    fig_caption: true
+    fig_width: 8
+    fig_height: 6
+    df_print: paged
+    code_folding: hide
+  pdf_document:
+    toc: true
+    number_sections: true
+    fig_caption: true
+    fig_width: 8
+    fig_height: 6
+    latex_engine: xelatex
+    includes:
+      in_header: preamble.tex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, dev = "png")
+library(tidyverse)
+library(here)
+library(ggplot2)
+library(corrplot)
+library(kableExtra)
+
+# Load cleaned data
+car_data <- readRDS(here("data", "processed", "cleaned_data.rds"))
+
+# Convert column names to lowercase for consistency
+names(car_data) <- tolower(names(car_data))
+
+# Set plotting theme
+theme_set(theme_minimal())
+```
+
+# 执行摘要
+
+本报告分析了汽车价格与各种因素（如车龄、行驶里程、马力等）之间的关系。基于对`r nrow(car_data)`辆汽车的数据分析，我们发现**车龄**和**行驶里程**是影响汽车价格的最重要因素。
+
+# 数据概况
+
+本次分析共包含`r nrow(car_data)`条汽车记录，价格范围从`r min(car_data$price)`到`r max(car_data$price)`美元。数据的基本统计摘要如下：
+
+```{r data-summary}
+car_data %>%
+  select(age, km, weight, hp, cc, doors, price) %>%
+  summary() %>%
+  kable(caption = "数值变量统计摘要") %>%
+  kable_styling()
+```
+
+# 分析结果
+
+## 价格分布
+
+汽车价格呈右偏分布，大部分汽车价格集中在较低水平。
+
+```{r price-distribution, fig.cap="汽车价格分布直方图"}
+ggplot(car_data, aes(x = price)) +
+  geom_histogram(fill = "steelblue", bins = 30, alpha = 0.8) +
+  labs(x = "价格(美元)", y = "频数")
+```
+
+## 车龄与价格的关系
+
+车龄与价格呈现明显的负相关关系，车龄越大，价格越低。这表明汽车折旧是影响价格的重要因素。
+
+```{r age-price, fig.cap="车龄与价格的关系散点图"}
+ggplot(car_data, aes(x = age, y = price)) +
+  geom_point(alpha = 0.6, color = "steelblue") +
+  geom_smooth(method = "lm", color = "red") +
+  labs(x = "车龄(月)", y = "价格(美元)")
+```
+
+## 行驶里程与价格的关系
+
+行驶里程与价格也呈现负相关关系，行驶里程越高，价格越低。这表明行驶里程是影响二手车价格的重要因素。
+
+```{r km-price, fig.cap="行驶里程与价格的关系散点图"}
+ggplot(car_data, aes(x = km, y = price)) +
+  geom_point(alpha = 0.6, color = "steelblue") +
+  geom_smooth(method = "lm", color = "red") +
+  labs(x = "行驶里程(公里)", y = "价格(美元)")
+```
+
+## 马力与价格的关系
+
+马力与价格呈现正相关关系，马力越大，价格越高。这表明汽车性能对价格有积极影响。
+
+```{r hp-price, fig.cap="马力与价格的关系散点图"}
+ggplot(car_data, aes(x = hp, y = price)) +
+  geom_point(alpha = 0.6, color = "steelblue") +
+  geom_smooth(method = "lm", color = "red") +
+  labs(x = "马力(HP)", y = "价格(美元)")
+```
+
+## 发动机排量与价格的关系
+
+```{r cc-price, fig.cap="发动机排量与价格的关系箱线图"}
+ggplot(car_data, aes(x = factor(cc), y = price, fill = factor(cc))) +
+  geom_boxplot() +
+  labs(x = "发动机排量(CC)", y = "价格(美元)") +
+  theme(legend.position = "none")
+```
+
+## 重量对价格的影响
+
+```{r weight-price, fig.cap="重量对价格的影响散点图"}
+ggplot(car_data, aes(x = weight, y = price)) +
+  geom_point(alpha = 0.6, color = "steelblue") +
+  geom_smooth(method = "lm", color = "red") +
+  labs(x = "重量(公斤)", y = "价格(美元)")
+```
+
+## 车门数量对价格的影响
+
+```{r doors-price, fig.cap="车门数量对价格的影响箱线图"}
+ggplot(car_data, aes(x = factor(doors), y = price, fill = factor(doors))) +
+  geom_boxplot() +
+  labs(x = "车门数量", y = "价格(美元)") +
+  theme(legend.position = "none")
+```
+
+## 金属漆对价格的影响
+
+```{r metcolor-price, fig.cap="金属漆对价格的影响箱线图"}
+car_data %>%
+  mutate(met_color = factor(met_color, labels = c("无金属漆", "有金属漆"))) %>%
+  ggplot(aes(x = met_color, y = price, fill = met_color)) +
+  geom_boxplot() +
+  labs(x = "金属漆", y = "价格(美元)") +
+  theme(legend.position = "none")
+```
+
+## 变量相关性分析
+
+```{r correlation, fig.cap="变量相关性矩阵"}
+numeric_vars <- car_data %>% select(age, km, weight, hp, cc, doors, price)
+cor_matrix <- cor(numeric_vars)
+
+corrplot(cor_matrix, method = "color", type = "upper", 
+         tl.col = "black", tl.srt = 45, addCoef.col = "black",
+         number.cex = 0.7)
+```
+
+## 回归模型分析
+
+我们建立了一个多元线性回归模型来预测汽车价格：
+
+```{r regression-model}
+model <- lm(price ~ age + km + weight + hp + met_color + cc + doors, data = car_data)
+model_summary <- summary(model)
+model_summary
+```
+
+```{r model-results}
+library(broom)
+tidy_model <- tidy(model) %>%
+  mutate(
+    term = case_when(
+      term == "(Intercept)" ~ "截距",
+      term == "age" ~ "车龄",
+      term == "km" ~ "行驶里程",
+      term == "weight" ~ "重量",
+      term == "hp" ~ "马力",
+      term == "met_color" ~ "金属漆",
+      term == "cc" ~ "发动机排量",
+      term == "doors" ~ "车门数量",
+      TRUE ~ term
+    ),
+    estimate = round(estimate, 2),
+    std.error = round(std.error, 2),
+    statistic = round(statistic, 2),
+    p.value = ifelse(p.value < 0.001, "< 0.001", round(p.value, 3))
+  )
+
+glance_model <- glance(model) %>%
+  mutate(across(where(is.numeric), round, 3))
+
+# Display coefficient table
+tidy_model %>%
+  kable(caption = "回归系数表") %>%
+  kable_styling()
+
+# Display model statistics
+glance_model %>%
+  kable(caption = "模型整体统计量") %>%
+  kable_styling()
+```
+
+# 结论与建议
+
+1. **主要发现**：车龄和行驶里程是影响汽车价格的最重要因素，两者与价格均呈负相关关系。
+2. **性能影响**：马力和发动机排量对价格有积极影响，表明汽车性能是消费者考虑的重要因素。
+3. **其他因素**：重量、车门数量和金属漆也对价格有一定影响。
+4. **建议**：
+   - 购买二手车时，应重点关注车龄和行驶里程
+   - 卖车时，应合理定价，考虑车龄、行驶里程和车辆性能
+   - 对于有金属漆、更多车门的车辆，可以适当提高定价
+
+**模型解释力**：我们的回归模型解释了价格变异的`r round(model_summary$r.squared * 100, 1)`%（R² = `r round(model_summary$r.squared, 3)`），表明模型具有较好的预测能力。

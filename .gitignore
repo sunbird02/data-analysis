@@ -1,0 +1,38 @@
+# 忽略 R 历史文件
+.Rhistory
+
+# 忽略 R 会话信息文件
+.RData
+.Ruserdata
+
+# 忽略临时文件和文件夹
+*.tmp
+*.temp
+temp/
+tmp/
+
+# 忽略日志文件
+*.log
+
+# 忽略 data 文件夹中的原始数据（如果不想上传）
+# data/raw/
+
+# 忽略 data 文件夹中的处理后数据（如果不想上传）
+# data/processed/
+
+# 忽略 output 文件夹（如果不想上传）
+# output/
+
+# 忽略 img 文件夹（如果不想上传）
+# img/
+
+# 忽略 reports 文件夹（如果不想上传）
+# reports/
+
+# 忽略特定的 R 文件（如果不想上传）
+# *.Rproj.user
+# renv.lock
+
+# 忽略系统文件
+.DS_Store
+Thumbs.db
